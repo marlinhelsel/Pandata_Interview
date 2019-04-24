@@ -1,0 +1,90 @@
+---
+title: "WineMag Data"
+author: "Marlin Helsel"
+date: "4/23/2019"
+output:
+  html_document:
+    df_print: paged
+---
+
+Let's look at the data a little closer:
+```{r, results = 'hide',echo=FALSE}
+wine = read.csv("winemag_data_pandata.csv", header = TRUE)
+
+```
+
+```{r}
+summary(wine$points)
+
+summary(wine$country)
+
+summary(wine$price)
+```
+
+Lets get rid of the rows without a price or a negative price and limit the the countries that have more than 1000 reviews and take a look at the data again:
+
+```{r,echo= FALSE}
+library(tidyr)
+df = data.frame(table(wine$country))
+Countries = df[df$Freq > 1000, 1]
+
+smalldf = wine[wine$country %in% Countries,]
+
+smalldf$country = droplevels(smalldf$country)
+
+removeNegPrice = smalldf[smalldf$price>=0, ]
+
+dropNas = removeNegPrice %>% drop_na(price)
+```
+
+```{r}
+summary(dropNas$points)
+
+summary(dropNas$country)
+
+summary(dropNas$price)
+```
+
+
+This data looks much better to work with. Lets graph this to see what it looks like:
+```{r, echo = FALSE}
+plot(dropNas$price, dropNas$points, col = dropNas$country, main = "Price vs Points by Country", xlab = "Price", ylab = "Points")
+
+```
+
+There is not much insight from the data in this graph. There are no trends immediately visable. 
+
+Lets look at a linear model predicting points based on the price of the wine.
+
+```{r}
+winelm = lm(points~price, data = dropNas)
+
+summary(winelm)
+
+plot(winelm)
+
+```
+
+And lets compare that to the linear model predicting points based on log(price),
+
+```{r}
+logWineLm = lm(points~ log(price), data= dropNas)
+
+summary(logWineLm)
+
+plot(logWineLm)
+```
+
+While Comparing these two models, I believe that the second model(predicting points from the log of price) is the better model. 
+
+In the Residuals vs Fitted plot, both models have a linear pattern, but the second model has a horizontal trend right around y=0, while the first model has a decreasing trend line moving away from y=0. 
+
+In the normal Q-Q plots, both have a mostly linear trend, but the first model has a tail that deviates from this trend at x=-3 and the second model keeps its linear trend throughout.
+
+Again While looking at the Scale-Location plots, model 2 is the better model. Model 2's data is nicely spread out and shows an almost linear line.
+
+The Residuals vs Leverage plots again strengthen my stance that the second model is a better model to use to predict points. The first model has a handful of points beyond the cook's distance that are influencing this model and may be outliers. However, the second model has zero points beyond cook's distance and the is again mostly linear. 
+
+Finally, The R-squared value for the second model is 37.5% while the R-squared value for the first model is 17.2%. Meaning that the second model explains more of the variablity in the data around the mean. 
+
+This is the best results I could write up within the alloted time. If I had a little longer I would layout the above graphs so they are next to their counterpart for easier visualization while comparing the two. I would have also looked into the data more to see if all of the data that was removed due to their price values needed to be removed or if any of those rows could have been salvaged.
